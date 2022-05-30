@@ -18,6 +18,11 @@ import java.util.stream.Collectors
 class LottoRouterFunction {
 
     @Bean
+    fun health() = router {
+        GET("/health") { _ -> ServerResponse.ok().bodyValue("OK") }
+    }
+
+    @Bean
     fun userRouter(lottoHandler: LottoHandler): RouterFunction<ServerResponse> {
         return router {
             GET("/api/lotto/lucky", lottoHandler::getLucky)
@@ -36,7 +41,9 @@ class LottoRouterFunction {
         fun getLucky(req: ServerRequest): Mono<ServerResponse> {
             shuffle(numbers)
             shuffle(numbers)
-            return ok().bodyValue(numbers.stream().limit(6).sorted().collect(Collectors.toList()))
+            val result = numbers.stream().limit(6).sorted().collect(Collectors.toList())
+            log.info("result: {}", result)
+            return ok().bodyValue(result)
         }
     }
 }
