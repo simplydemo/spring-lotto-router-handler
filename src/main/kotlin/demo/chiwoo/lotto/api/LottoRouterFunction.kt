@@ -8,24 +8,21 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.RouterFunction
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.router
 import reactor.core.publisher.Mono
-import java.util.Collections.shuffle
-import java.util.stream.Collectors
 
 @Configuration
-class LottoRouterFunction {
+open class LottoRouterFunction {
 
     @Bean
-    fun health() = router {
+    open fun health() = router {
         GET("/health") { _ -> ServerResponse.ok().bodyValue("OK") }
     }
 
     @Bean
-    fun userRouter(lottoHandler: LottoHandler): RouterFunction<ServerResponse> {
+    open fun userRouter(lottoHandler: LottoHandler): RouterFunction<ServerResponse> {
         return router {
-            GET("/api/lotto/lucky", lottoHandler::getLucky)
+            GET("/api/lotto/lucky", lottoHandler::generateLotto645)
         }
     }
 
@@ -37,13 +34,27 @@ class LottoRouterFunction {
             val log: Logger = LoggerFactory.getLogger(javaClass)
         }
 
-        val numbers = (1..45).toList()
-        fun getLucky(req: ServerRequest): Mono<ServerResponse> {
-            shuffle(numbers)
-            shuffle(numbers)
-            val result = numbers.stream().limit(6).sorted().collect(Collectors.toList())
-            log.info("result: {}", result)
-            return ok().bodyValue(result)
+        fun generateLotto645(req: ServerRequest): Mono<ServerResponse> {
+            val count = req.queryParam("count").map {
+                try {
+                    val i = it.toInt()
+                    if (i > 99) 99 else i
+                } catch (e: NumberFormatException) {
+                    1
+                }
+            }
+            .orElse(1)
+
+            if (count !in 1..1000) {
+                return ServerResponse
+                    .badRequest()
+                    .bodyValue("Invalid count: must be between 1 and 1000")
+            }
+            val lottoSets = List(count) {
+                (1..45).shuffled().take(6).sorted()
+            }
+            val result = if (count == 1) lottoSets[0] else lottoSets
+            return ServerResponse.ok().bodyValue(result)
         }
     }
 }

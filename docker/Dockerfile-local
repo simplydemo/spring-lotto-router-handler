@@ -8,17 +8,12 @@ LABEL name="lotto-service" version=1.0.0 \
  org.chiwoo.image.description="Dockerfile for Lotto Service" \
  org.chiwoo.image.source="https://github.com/"
 
-
 WORKDIR /app
 
 COPY pom.xml .
-
-# Cache for Github BuildKit
-RUN --mount=type=cache,target=/root/.m2 mvn -DskipChecks -DskipTests dependency:go-offline
-
 COPY src ./src
 
-RUN --mount=type=cache,target=/root/.m2 mvn -B -q -DskipTests clean package
+RUN mvn -B -q -DskipTests clean package
 
 # Runtime Stage
 FROM amazoncorretto:21-alpine
